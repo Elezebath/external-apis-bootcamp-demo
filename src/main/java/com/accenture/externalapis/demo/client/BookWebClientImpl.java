@@ -10,7 +10,8 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
+import reactor.util.retry.Retry;
+import java.time.Duration;
 import java.util.List;
 
 @Component
@@ -38,11 +39,16 @@ public class BookWebClientImpl implements BookWebClient {
                 .uri("/books/{id}", id)
                 .retrieve()
                 .bodyToMono(BookApiResponse.class)
+                // fail fast if external service is slow
+                .timeout(Duration.ofSeconds(3))
+                // retry only on 5xx server errors a couple of times with backoff
+                .retryWhen(Retry.backoff(2, Duration.ofMillis(500))
+                        .filter(throwable -> throwable instanceof WebClientResponseException && ((WebClientResponseException) throwable).getStatusCode().is5xxServerError()))
                 .map(bookMapper::toDto)
                 .onErrorResume(WebClientResponseException.class, ex -> Mono.error(new ClientException(CLIENT_RESPONSE_EXCEPTION_MSG + ": " + ex.getStatusCode(), ex)))
                 .onErrorResume(WebClientRequestException.class, ex -> Mono.error(new ClientException(CLIENT_REQUEST_EXCEPTION_MSG, ex)))
                 .onErrorMap(e -> !(e instanceof ClientException),
-                e -> new ClientException(UNEXPECTED_WEB_CLIENT_ERROR_MSG, e));
+                        e -> new ClientException(UNEXPECTED_WEB_CLIENT_ERROR_MSG, e));
     }
 
 
@@ -52,6 +58,9 @@ public class BookWebClientImpl implements BookWebClient {
                 .uri("/books")
                 .retrieve()
                 .bodyToFlux(BookApiResponse.class)
+                .timeout(Duration.ofSeconds(5))
+                .retryWhen(Retry.backoff(2, Duration.ofMillis(500))
+                        .filter(throwable -> throwable instanceof WebClientResponseException && ((WebClientResponseException) throwable).getStatusCode().is5xxServerError()))
                 .map(bookMapper::toDto)
                 .onErrorResume(WebClientResponseException.class, ex -> Mono.error(new ClientException(CLIENT_RESPONSE_EXCEPTION_MSG + ": " + ex.getStatusCode(), ex)))
                 .onErrorResume(WebClientRequestException.class, ex -> Mono.error(new ClientException(CLIENT_REQUEST_EXCEPTION_MSG, ex)))
