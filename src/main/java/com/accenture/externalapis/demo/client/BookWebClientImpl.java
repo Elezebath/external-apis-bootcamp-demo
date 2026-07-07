@@ -17,9 +17,9 @@ import java.util.List;
 public class BookWebClientImpl implements BookWebClient {
 
     private final WebClient webClient;
-    private static final String CLIENT_RESPONSE_EXCEPTION_MSG = "External service returned error: ";
-    private static final String CLIENT_REQUEST_EXCEPTION_MSG = "External service is unreachable: ";
-        private final BookMapper bookMapper;
+    private static final String CLIENT_RESPONSE_EXCEPTION_MSG = "External service returned error";
+    private static final String CLIENT_REQUEST_EXCEPTION_MSG = "External service is unreachable";
+    private final BookMapper bookMapper;
 
     public BookWebClientImpl(WebClient.Builder builder, ExternalServiceProperties properties) {
         // Build the WebClient using builder.baseUrl(properties.baseUrl()).build()
@@ -38,10 +38,9 @@ public class BookWebClientImpl implements BookWebClient {
                 .retrieve()
                 .bodyToMono(BookApiResponse.class)
                 .map(bookMapper::toDto)
-                .onErrorResume(WebClientResponseException.class, ex -> Mono.error(new ClientException(CLIENT_RESPONSE_EXCEPTION_MSG + ex.getMessage(), ex)))
-                .onErrorResume(WebClientRequestException.class, ex -> Mono.error(new ClientException(CLIENT_REQUEST_EXCEPTION_MSG + ex.getMessage(), ex)));
+                .onErrorResume(WebClientResponseException.class, ex -> Mono.error(new ClientException(CLIENT_RESPONSE_EXCEPTION_MSG + ": " + ex.getStatusCode(), ex)))
+                .onErrorResume(WebClientRequestException.class, ex -> Mono.error(new ClientException(CLIENT_REQUEST_EXCEPTION_MSG, ex)));
     }
-
 
 
     @Override
@@ -51,8 +50,8 @@ public class BookWebClientImpl implements BookWebClient {
                 .retrieve()
                 .bodyToFlux(BookApiResponse.class)
                 .map(bookMapper::toDto)
-                .onErrorResume(WebClientResponseException.class, ex -> Mono.error(new ClientException(CLIENT_RESPONSE_EXCEPTION_MSG + ex.getMessage(), ex)))
-                .onErrorResume(WebClientRequestException.class, ex -> Mono.error(new ClientException(CLIENT_REQUEST_EXCEPTION_MSG + ex.getMessage(), ex)));
+                .onErrorResume(WebClientResponseException.class, ex -> Mono.error(new ClientException(CLIENT_RESPONSE_EXCEPTION_MSG + ": " + ex.getStatusCode(), ex)))
+                .onErrorResume(WebClientRequestException.class, ex -> Mono.error(new ClientException(CLIENT_REQUEST_EXCEPTION_MSG, ex)));
     }
 
     @Override
@@ -60,10 +59,10 @@ public class BookWebClientImpl implements BookWebClient {
         // Implementation for fetching books in parallel
         return Mono.zip(
                         getBookAsync(id1),
-                        getBookAsync(id2)
-                ).map(tuple -> List.of(tuple.getT1(), tuple.getT2()))
-                .onErrorResume(WebClientResponseException.class, ex -> Mono.error(new ClientException(CLIENT_RESPONSE_EXCEPTION_MSG + ex.getMessage(), ex)))
-                .onErrorResume(WebClientRequestException.class, ex -> Mono.error(new ClientException(CLIENT_REQUEST_EXCEPTION_MSG + ex.getMessage(), ex)));
+                        getBookAsync(id2))
+                .map(tuple -> List.of(tuple.getT1(), tuple.getT2()))
+                .onErrorResume(WebClientResponseException.class, ex -> Mono.error(new ClientException(CLIENT_RESPONSE_EXCEPTION_MSG + ": " + ex.getStatusCode(), ex)))
+                .onErrorResume(WebClientRequestException.class, ex -> Mono.error(new ClientException(CLIENT_REQUEST_EXCEPTION_MSG, ex)));
     }
 
 

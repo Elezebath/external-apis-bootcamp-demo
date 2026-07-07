@@ -36,12 +36,12 @@ public class BookRestClientImpl implements BookRestClient {
                 throw new ClientException("Book response was empty.");
             }
             return bookMapper.toDto(response);
-        } catch (HttpClientErrorException e) {
-            throw new ClientException("Client error from book service: " + e.getStatusCode(), e);
-        } catch (HttpServerErrorException e) {
-            throw new ClientException("Server error from book service: " + e.getStatusCode(), e);
+        } catch (ClientException e) {
+            throw e;
         } catch (ResourceAccessException e) {
             throw new ClientException("Failed to connect to external service.", e);
+        } catch (Exception e) {
+            throw new ClientException("Unexpected error from book service.", e);
         }
     }
 
@@ -59,12 +59,13 @@ public class BookRestClientImpl implements BookRestClient {
                     .map(bookMapper::toDto)
                     .toList();
 
-        } catch (HttpClientErrorException e) {
-            throw new ClientException("Client error from book service: " + e.getStatusCode(), e);
-        } catch (HttpServerErrorException e) {
-            throw new ClientException("Server error from book service: " + e.getStatusCode(), e);
+        } catch (ClientException e) {
+            throw e;
         } catch (ResourceAccessException e) {
             throw new ClientException("Failed to connect to external service.", e);
+        } catch (Exception e) {
+            // Sanitize unexpected errors
+            throw new ClientException("Unexpected error from book service.", e);
         }
     }
 
