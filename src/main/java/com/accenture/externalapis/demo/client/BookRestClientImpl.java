@@ -13,7 +13,7 @@ import java.util.List;
 @Component
 public class BookRestClientImpl implements BookRestClient {
 
-    private RestClient restClient;
+    private final RestClient restClient;
     private final BookMapper bookMapper;
 
     public BookRestClientImpl(RestClient.Builder builder, ExternalServiceProperties properties) {
