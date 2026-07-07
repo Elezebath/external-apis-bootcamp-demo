@@ -44,7 +44,3 @@ Features:
 - Reactive implementation without using `.block()`.
 
 ---
-
-## External API Documentation
-
-External Book Service Swagger UI:
